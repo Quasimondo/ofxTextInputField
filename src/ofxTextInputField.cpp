@@ -16,7 +16,7 @@
 
 
 ofxTextInputField::ofxTextInputField() {
-    
+
     shiftMap[44] = '<';
     shiftMap[45] = '_';
     shiftMap[46] = '>';
@@ -36,7 +36,7 @@ ofxTextInputField::ofxTextInputField() {
     shiftMap[92] = '|';
     shiftMap[93] = '}';
     shiftMap[96] = '~';
-    
+
 	placeholderText = "";
 	text = "";
 
@@ -55,12 +55,12 @@ ofxTextInputField::ofxTextInputField() {
 
 	isCommand = false;
 	isShifted = false;
-	
+
 	fontRef = NULL;
     isEnabled = false;
 	isEditing = false;
     bounds = ofRectangle(0,0,100,22);
-	
+
     drawCursor = false;
 	drawBounds = true;
 	autoClear = false;
@@ -68,7 +68,7 @@ ofxTextInputField::ofxTextInputField() {
 
 	fontRef = new ofxTextInput::BitmapFontRenderer();
     //isSetup = false;
-	
+
 	VERTICAL_PADDING = 12;
 	HORIZONTAL_PADDING = 10;
 	lastTimeCursorMoved = ofGetElapsedTimef();
@@ -105,7 +105,7 @@ void ofxTextInputField::disable(){
 		ofRemoveListener(ofEvents().mouseReleased, this, &ofxTextInputField::mouseReleased);
 		isEnabled = false;
     }
-	
+
 }
 void ofxTextInputField::beginEditing() {
     if(!isEditing){
@@ -150,7 +150,7 @@ bool ofxTextInputField::getIsEnabled(){
 }
 
 void ofxTextInputField::draw() {
-    
+
 	if (drawBounds) {
 		ofPushStyle();
 		ofNoFill();
@@ -160,7 +160,13 @@ void ofxTextInputField::draw() {
 	}
 
 	ofPushMatrix();
-	ofTranslate(bounds.x, bounds.y);
+
+	#if defined(TARGET_WIN32)
+        //fixed label offset for windows:
+        ofTranslate(bounds.x, bounds.y - 10);
+    #else
+        ofTranslate(bounds.x, bounds.y);
+    #endif
 
 	if(selecting) {
 		ofPushStyle();
@@ -176,20 +182,20 @@ void ofxTextInputField::draw() {
 
 		ofSetColor(selectionColor);
 		ofFill();
-		
+
 		if(beginCursorY==endCursorY) {
 			// single line selection
 			ofRect(HORIZONTAL_PADDING + startX, VERTICAL_PADDING + fontRef->getLineHeight()*beginCursorY,
 				   endX - startX, fontRef->getLineHeight());
 		} else {
-			
+
 			// multiline selection.
 			// do first line to the end
 			ofRect(HORIZONTAL_PADDING + startX, VERTICAL_PADDING + fontRef->getLineHeight()*beginCursorY,
 				   fontRef->stringWidth(lines[beginCursorY]) - startX,
 				   fontRef->getLineHeight()
 			);
-			
+
 			// loop through entirely selected lines
 			for(int i = beginCursorY + 1; i < endCursorY; i++) {
 				ofRect(HORIZONTAL_PADDING, VERTICAL_PADDING + fontRef->getLineHeight()*i,
@@ -203,32 +209,32 @@ void ofxTextInputField::draw() {
 			);
 		}
 		ofPopStyle();
-		
-	} 
+
+	}
 	//draw cursor line
     else if(drawCursor) {
 		ofPushStyle();
 		// cursor should only blink when its been idle, and animation
 		// should be a clipped sine wave
         float timeFrac = 0.5 * ofClamp(cos(6.0f * (ofGetElapsedTimef()-lastTimeCursorMoved))*4, -1, 1) + 0.5;
-        
+
         ofSetColor(textColor.r * timeFrac, textColor.g * timeFrac, textColor.b * timeFrac, textColor.a);
-		
-		
+
+
 		// argh, splitting all the time.
 		vector<string> lines = ofSplitString(text, "\n");
-		
-		
+
+
 		// calculate this every loop.
 		int cursorX, cursorY;
         getCursorCoords(cursorPosition, cursorX, cursorY);
 	//	printf("Pos: %d    X: %d   Y: %d\n", cursorPosition, cursorX, cursorY);
 		int cursorPos = HORIZONTAL_PADDING + fontRef->stringWidth(lines[cursorY].substr(0,cursorX));
-        
-        
+
+
 		int cursorTop = VERTICAL_PADDING + fontRef->getLineHeight()*cursorY;
 		int cursorBottom = cursorTop + fontRef->getLineHeight();
-		
+
 		ofSetLineWidth(1.0f);
 		//TODO: multiline with fontRef
         ofLine(cursorPos, cursorTop,
@@ -239,20 +245,20 @@ void ofxTextInputField::draw() {
 		ofSetColor(placeholderColor);
 		fontRef->drawString(placeholderText, HORIZONTAL_PADDING, fontRef->getLineHeight()+VERTICAL_PADDING);
 	}
-	
+
 	ofSetColor(textColor);
 	fontRef->drawString(text, HORIZONTAL_PADDING, fontRef->getLineHeight()+VERTICAL_PADDING);
-	
+
 	ofPopMatrix();
 }
 
 void ofxTextInputField::getCursorCoords(int pos, int &cursorX, int &cursorY) {
 	vector<string> lines = ofSplitString(text, "\n");
-	
-	
+
+
 	int c = 0;
-	
-	
+
+
 	for(int i = 0; i < lines.size(); i++) {
 		if(pos<=c+lines[i].size()) {
 			cursorY = i;
@@ -281,7 +287,7 @@ int ofxTextInputField::getCursorPositionFromMouse(int x, int y) {
 	pos /= fontRef->getLineHeight();
 	int line = pos;
 	cursorY = line;
-	
+
 	vector<string> lines = ofSplitString(text, "\n");
 	if(cursorY>=lines.size()-1) cursorY = lines.size()-1;
 	if(lines.size()>0) {
@@ -313,7 +319,7 @@ void ofxTextInputField::mouseDragged(ofMouseEventArgs& args) {
 			selecting = true;
 			selectionBegin = MIN(pos, cursorPosition);
 			selectionEnd = MAX(pos, cursorPosition);
-			
+
 		} else {
 			selecting = false;
 		}
@@ -373,8 +379,8 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 	//jg: made a step closer to this with swappable renderers and ofxFTGL -- but need unicode text input...
 	lastTimeCursorMoved = ofGetElapsedTimef();
 	int key = args.key;
-	
-	
+
+
     if(key == OF_KEY_SHIFT) {
         isShifted = true;
     }
@@ -386,19 +392,19 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 #endif
 		isCommand = true;
     }
-	
+
 #ifdef USE_GLFW_CLIPBOARD
     if(key == 'c' && isCommand ) {
         setClipboard(text.substr(selectionBegin, selectionEnd - selectionBegin));
         return;
     }
-	
+
     if(key == 'v' && isCommand ) {
         text.insert(cursorPosition, getClipboard());
         return;
     }
 #endif
-    
+
 	if ((key >=32 && key <=126) || key=='\t' || key==OF_KEY_RETURN) {
 		if(selecting) {
 			text.erase(text.begin() + selectionBegin,
@@ -408,8 +414,8 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 			selecting = false;
 		}
 	}
-			
-			
+
+
 	if (key == OF_KEY_RETURN) {
 		if(!multiline) {
 			endEditing();
@@ -417,7 +423,7 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 		}
 		text.insert(text.begin()+cursorPosition, '\n');
 		cursorPosition++;
-		
+
 
 		if(autoTab) {
 			// how much whitespace is there on the previous line?
@@ -425,7 +431,7 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 			getCursorCoords(cursorPosition, xx, yy);
 			vector<string> lines = ofSplitString(text, "\n");
 			if(yy>0) {
-				
+
 				// collect all the whitespace on the previous line.
 				string previousWhitespace = "";
 				string previousLine = lines[yy-1];
@@ -454,8 +460,8 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 		ofNotifyEvent(textChanged, text, this);
         return;
 	}
-	
-	
+
+
 	if (key==OF_KEY_BACKSPACE) {
 		if(selecting) {
 			text.erase(text.begin() + selectionBegin,
@@ -473,7 +479,7 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 		ofNotifyEvent(textChanged, text, this);
 		return;
 	}
-	
+
 	if (key==OF_KEY_DEL) {
 		if(selecting) {
 			text.erase(text.begin() + selectionBegin,
@@ -490,12 +496,12 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 		ofNotifyEvent(textChanged, text, this);
 		return;
 	}
-	
+
 	if (key==OF_KEY_LEFT){
 		if(selecting) {
 			cursorPosition = selectionBegin;
 			selecting = false;
-			
+
 		} else {
 			if (cursorPosition>0){
 				--cursorPosition;
@@ -518,7 +524,7 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 		if(selecting) {
 			cursorPosition = selectionBegin;
 			selecting = false;
-			
+
 		} else {
 			if (cursorPosition>0) {
 				int xx, yy;
@@ -547,7 +553,7 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 			vector<string> lines = ofSplitString(text, "\n");
 			yy++;
 			if(yy<lines.size()-1) {
-				
+
 				xx = MIN(lines[yy].size()-1, xx);
 				cursorPosition = xx;
 				for(int i = 0; i < yy; i++) cursorPosition += lines[i].size()+1;
@@ -559,19 +565,19 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 		return;
 	}
 
-	
-	
+
+
 	//if ((key >=32 && key <=126) || key=='\t') {
- //       
+ //
  //       if(isShifted) {
- //           
+ //
  //           char toInsert;
  //           if( !(key > 96 && key < 123) && !(key > 65 && key < 90) && shiftMap.find(key) != shiftMap.end() ) {
  //               toInsert = shiftMap[key];//toInsert = key - 32;
  //           } else {
  //               toInsert = key;
  //           }
- //           
+ //
  //           text.insert(text.begin()+cursorPosition, toInsert);
  //       } else {
             text.insert(text.begin()+cursorPosition, key);
@@ -584,7 +590,7 @@ void ofxTextInputField::keyPressed(ofKeyEventArgs& args) {
 
 void ofxTextInputField::keyReleased(ofKeyEventArgs &a)
 {
-    
+
 #if defined(TARGET_OSX)
 	if(a.key == OF_KEY_COMMAND) {  // EZ: or 4532, test this on Mac
 #elif defined(TARGET_WIN32)
